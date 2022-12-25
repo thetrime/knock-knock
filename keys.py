@@ -10,7 +10,7 @@ import threading
 from bluepy import btle
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.x963kdf import X963KDF
-from ecdsa.ellipticcurve import Point
+#from ecdsa.ellipticcurve import Point
 from ecdsa.curves import NIST224p
 
 keys = []
@@ -22,7 +22,7 @@ G = NIST224p.generator
 n = NIST224p.order
 WINDOW_SIZE = 10
 
-def refresh_key(key, echo):
+def update_key(key, echo):
     """
     Update a given key to the next key period
     """
@@ -33,7 +33,7 @@ def refresh_key(key, echo):
         length=32,
         sharedinfo=b"update",
     )
-    sk_1 = xkdf.derive(key['sharedKey'])
+    sk_1 = xkdf.derive(key['shared_key'])
 
     # Derive AT_1 from SK_1
     xkdf = X963KDF(
@@ -52,17 +52,19 @@ def refresh_key(key, echo):
     v_1 = (v_1 % (n-1)) + 1
 
     # Compute P_1
-    p_0 = key['privateKey'] * G
-    px_1 = u_1 * p_0 + v_1 * G
+    p_0 = key['private_key'] * G
+    p_1 = u_1 * p_0 + v_1 * G
     date_time = datetime.fromtimestamp(t_i).strftime("%Y-%m-%d %H:%M:%S")
-    advertised_key = "{0:#0{1}x}".format(px_1.x(), 58)
     if echo:
-        print(date_time + " " + advertised_key + ": " + key['name'])
-    if len(key['advertisedKeys']) > WINDOW_SIZE:
-        key['advertisedKeys'].popLeft()
-    key['advertisedKeys'].append(hex(px_1.x()))
+        print(date_time + " " + hex(p_1.x()) + ": " + key['name'])
+    if len(key['advertised_prefixes']) > WINDOW_SIZE:
+        key['advertised_prefixes'].popLeft()
+    # We only really care about the first 6 bytes of the key.
+    # In the near-to-owner case, this is all that is advertised..
+    # The full key is only needed if we want to upload a finding-report to Apple
+    key['advertised_prefixes'].append(hex(p_1.x()[0:5]))
     key['time'] = t_i
-    key['sharedKey'] = sk_1
+    key['shared_key'] = sk_1
 
 def load_keys():
     """
@@ -81,21 +83,21 @@ def load_keys():
             min_t = t_0
         keys.append({
             'time': t_0,
-            'sharedKey': unhexlify(chunks[1]),
-            'privateKey': int.from_bytes(unhexlify(chunks[2]), ENDIANNESS),
+            'shared_key': unhexlify(chunks[1]),
+            'private_key': int.from_bytes(unhexlify(chunks[2]), ENDIANNESS),
             'name': " ".join(chunks[3:]),
-            'advertisedKeys': deque()
+            'advertised_prefixes': deque()
         })
     keyfile.close()
 
-def refresh_keys():
+def rehydrate_keys():
     """
     Refresh all keys until they are at most 12 hours old
     """
-    # Starting from the oldest key, get all the keys up to 12 hours ago
+    # Starting from the oldest key, get all the keys up to WINDOW_SIZE/2 * 15 minutes ago
     for key in keys:
-        while key['time'] < twelve_hours_ago + 24*60*60*7:
-            refresh_key(key, False)
+        while key['time'] < now() - (WINDOW_SIZE/2) * 15 * 60:
+            update_key(key, False)
 
 def stash_keys():
     """
@@ -108,9 +110,9 @@ def stash_keys():
         out.write(
             datetime.fromtimestamp(key['time']).isoformat(timespec='milliseconds') +
             "Z " +
-            key['sharedKey'].hex() +
+            key['shared_key'].hex() +
             " " +
-            hex(key['privateKey']) +
+            hex(key['private_key']) +
             " " +
             key['name'] +
             "\n"
@@ -137,7 +139,7 @@ class ScanPrint(btle.DefaultDelegate):
                 elif val[5] == 2: # Partial key
                     key_prefix[0] ^= (val[7] >> 6)
                 for key in keys:
-                    for candidate in key.advertisedKeys:
+                    for candidate in key['advertised_prefixes']:
                         if candidate.startsWith(key_prefix):
                             print("Got notificaton from " + key['name'])
 
@@ -146,25 +148,21 @@ def update_keys_as_required():
     Update keys until there are WINDOW_SIZE advertised keys available, with the current time
     being the middle of the array
     """
-    # FIXME: Only refreshKey if needed
+    threading.Timer(60.0, update_keys_as_required).start()
     for key in keys:
-        refresh_key(key, False)
+        while key['time'] < now() + (WINDOW_SIZE/2) * 15 * 60:
+            update_key(key, False)
+
 
 def main():
     """
     I have to document main()?
     """
     load_keys()
-    refresh_keys()
+    rehydrate_keys()
     stash_keys()
     update_keys_as_required()
     scanner = btle.Scanner(0).withDelegate(ScanPrint())
     scanner.scan(0)
 
     # Then every 15 minutes, call refreshKey(key)
-
-
-    # Now print out the key next 96 keys
-    for key in keys:
-        while key['time'] < twelve_hours_ahead:
-            refresh_key(key, True)
