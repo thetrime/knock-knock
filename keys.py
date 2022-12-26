@@ -160,10 +160,11 @@ def update_keys_as_required():
     being the middle of the array
     """
     while True:
-        time.sleep(60)
         for key in keys:
             while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
+                print("Updating key for " + key['name'])
                 update_key(key, False)
+        time.sleep(60)                
 
 
 def main():
@@ -173,10 +174,12 @@ def main():
     print("Loading keys")
     load_keys()
     print("Loaded %d keys. Rehydrating..." % len(keys))
+    # We stash the keys after rehydrating. To avoid getting too far ahead, we keep WINDOW_SIZE/2 blocks behind
     rehydrate_keys()
     print("Keys rehydrated. Stashing hydrated keys")
     stash_keys()
 
+    # Now we can start to update the keys
     print("Scheduling keyroller")
     threading.Thread(target=update_keys_as_required, daemon=True)
     print("Preparing scanner")
