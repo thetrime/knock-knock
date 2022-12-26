@@ -125,23 +125,26 @@ class ScanPrint(btle.DefaultDelegate):
         btle.DefaultDelegate.__init__(self)
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
-        for (adTypeCode, _, val) in scanEntry.getScanData():
-            if adTypeCode == 0xff and val[0:6] == "4c0012":
-                print("Apple device discovered")
+        for (code_type, _, val) in scanEntry.getScanData():
+            if code_type == 0xff and val[0:6] == "4c0012":
+                # print("Apple device discovered")
                 data = unhexlify(val)
                 # Apple advertisement
                 first_byte = int(scanEntry.addr[0:2], 16) & 0b00111111
                 key_prefix = scanEntry.addr.replace(":", "")[2:]
-                # status = val[6:7]. This contains the battery info and whether the AirTag was seen by its owner recently
-                if data[3] == 25: # Full key. Rest of the key is in val[8:..] but we don't really need it - just the prefix
+                # status = val[6:7]
+                # This contains the battery info and whether the
+                # AirTag was seen by its owner recently
+                if data[3] == 25:
+                    # Full key. Rest of the key is in val[8:..]
+                    # but we don't really need it - just the prefix
                     special_bits = data[27]
                 elif data[3] == 2: # Partial key
                     special_bits = data[5]
                 else:
-                    print("Bad special bits %d " % data[5])
+                    print(f"Bad special bits {data[5]}")
                 first_byte |= ((special_bits << 6) & 0b11000000)
                 first_byte &= 0xff
-                print(first_byte)
                 if first_byte < 0x10:
                     key_prefix = "0x0" + hex(first_byte)[2] + key_prefix
                 else:
@@ -160,7 +163,6 @@ def update_keys_as_required():
     while True:
         for key in keys:
             while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
-                print("Updating key for " + key['name'])
                 update_key(key, False)
         sleep(60)
 
@@ -171,7 +173,7 @@ def main():
     """
     print("Loading keys")
     load_keys()
-    print("Loaded %d keys. Rehydrating..." % len(keys))
+    print(f"Loaded {len(keys)} keys. Rehydrating...")
     # We stash the keys after rehydrating. To avoid getting too far ahead, we keep WINDOW_SIZE/2 blocks behind
     rehydrate_keys()
     print("Keys rehydrated. Stashing hydrated keys")
