@@ -152,10 +152,11 @@ def update_keys_as_required():
     Update keys until there are WINDOW_SIZE advertised keys available, with the current time
     being the middle of the array
     """
-    threading.Timer(60.0, update_keys_as_required).start()
-    for key in keys:
-        while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
-            update_key(key, False)
+    while True:
+        time.sleep(60)
+        for key in keys:
+            while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
+                update_key(key, False)
 
 
 def main():
@@ -169,9 +170,10 @@ def main():
     print("Keys rehydrated. Stashing hydrated keys")
     stash_keys()
     print("Scheduling keyroller")
-    update_keys_as_required()
-    print("Scanning for devices")
+    threading.Thread(target=update_keys_as_required, daemon=True)
+    print("Preparing scanner")
     scanner = btle.Scanner(0).withDelegate(ScanPrint())
+    print("Scanning")
     scanner.scan(0)
 
 if __name__ == "__main__":
