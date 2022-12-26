@@ -134,9 +134,9 @@ class ScanPrint(btle.DefaultDelegate):
                 first_byte = int(scanEntry.addr[0:2], 16) & 0b00111111
                 key_prefix = scanEntry.addr.replace(":", "")[2:]
                 # status = val[6:7]. This contains the battery info and whether the AirTag was seen by its owner recently
-                if data[5] == 25: # Full key. Rest of the key is in val[8:..] but we don't really need it - just the prefix
+                if data[3] == 25: # Full key. Rest of the key is in val[8:..] but we don't really need it - just the prefix
                     special_bits = data[27]
-                elif data[5] == 2: # Partial key
+                elif data[3] == 2: # Partial key
                     special_bits = data[5]
                 else:
                     print("Bad special bits %d " % data[5])
