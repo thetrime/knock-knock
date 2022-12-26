@@ -15,9 +15,6 @@ from ecdsa.curves import NIST224p
 
 keys = []
 ENDIANNESS = "big"
-now = time()
-twelve_hours_ago = now - 12*60*60
-twelve_hours_ahead = now + 12*60*60
 G = NIST224p.generator
 n = NIST224p.order
 WINDOW_SIZE = 10
@@ -71,7 +68,7 @@ def load_keys():
     Load stashed keys
     """
     keyfile = open("keys", "r", encoding="utf-8")
-    min_t = twelve_hours_ago
+    min_t = time.now() - 12*60*60
     for line in keyfile:
         if line.startswith("#"):
             continue
@@ -96,7 +93,7 @@ def rehydrate_keys():
     """
     # Starting from the oldest key, get all the keys up to WINDOW_SIZE/2 * 15 minutes ago
     for key in keys:
-        while key['time'] < now() - (WINDOW_SIZE/2) * 15 * 60:
+        while key['time'] < time() - (WINDOW_SIZE/2) * 15 * 60:
             update_key(key, False)
 
 def stash_keys():
@@ -128,20 +125,26 @@ class ScanPrint(btle.DefaultDelegate):
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
         for (_, _, val) in scanEntry.getScanData():
-            if val[1:4] == 0xFF4C0012:
+            if val[1:4] == "FF4C0012":
                 # Apple advertisement
-                key_prefix = scanEntry.addr
-                # status = val[6]
-                if val[5] == 25: # Full key
-                    print("full key")
-                    #key_prefix[6:27] = val[7:28]
-                    key_prefix[0] ^= (val[29] >> 6)
+                first_byte = int(scanEntry.addr[0:1], 16)
+                key_prefix = scanEntry.addr.replace(":", "")
+                # status = val[6]. This contains the battery info and whether the AirTag was seen by its owner recently
+                if val[5] == 25: # Full key. Rest of the key is in val[7:28] but we don't really need it - just the prefix
+                    special_bits = int(val[29], 16)
+                    first_byte ^= (special_bits << 6)
                 elif val[5] == 2: # Partial key
-                    key_prefix[0] ^= (val[7] >> 6)
+                    special_bits = int(val[7], 16)
+                    first_byte ^= (special_bits << 6)
+                first_byte &= 0xff
+                if first_byte < 0x10:
+                    key_prefix[0] = "0" + hex(first_byte)
+                else:
+                    key_prefix[0] = hex(first_byte)
                 for key in keys:
                     for candidate in key['advertised_prefixes']:
                         if candidate.startsWith(key_prefix):
-                            print("Got notificaton from " + key['name'])
+                            print("Got notificaton from " + key['name'] + " with signal strength " + scanEntry.rssi + "dBm")
 
 def update_keys_as_required():
     """
@@ -150,7 +153,7 @@ def update_keys_as_required():
     """
     threading.Timer(60.0, update_keys_as_required).start()
     for key in keys:
-        while key['time'] < now() + (WINDOW_SIZE/2) * 15 * 60:
+        while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
             update_key(key, False)
 
 
@@ -164,5 +167,3 @@ def main():
     update_keys_as_required()
     scanner = btle.Scanner(0).withDelegate(ScanPrint())
     scanner.scan(0)
-
-    # Then every 15 minutes, call refreshKey(key)
