@@ -125,7 +125,6 @@ class ScanPrint(btle.DefaultDelegate):
         btle.DefaultDelegate.__init__(self)
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
-        print("device discovered")
         for (adTypeCode, _, val) in scanEntry.getScanData():
             if adTypeCode == 0xff and val[0:6] == "4c0012":
                 print("Apple device discovered")
@@ -137,11 +136,11 @@ class ScanPrint(btle.DefaultDelegate):
                 # status = val[6:7]. This contains the battery info and whether the AirTag was seen by its owner recently
                 if data[5] == 25: # Full key. Rest of the key is in val[8:..] but we don't really need it - just the prefix
                     special_bits = data[27]
-                    first_byte |= ((special_bits << 6) & 0b11000000)
                 elif data[5] == 2: # Partial key
                     special_bits = data[5]
-                    first_byte |= ((special_bits << 6) & 0b11000000)
+                first_byte |= ((special_bits << 6) & 0b11000000)
                 first_byte &= 0xff
+                print(first_byte)
                 if first_byte < 0x10:
                     key_prefix = "0x0" + hex(first_byte)[2] + key_prefix
                 else:
