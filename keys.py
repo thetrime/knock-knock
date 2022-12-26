@@ -59,7 +59,7 @@ def update_key(key, echo):
     # We only really care about the first 6 bytes of the key.
     # In the near-to-owner case, this is all that is advertised..
     # The full key is only needed if we want to upload a finding-report to Apple
-    new_prefix = hex(p_1.x())[2:14]
+    new_prefix = hex(p_1.x())[0:14]
     key['advertised_prefixes'].append(new_prefix)
     key['time'] = t_i
     key['shared_key'] = sk_1
