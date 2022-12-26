@@ -128,7 +128,6 @@ class ScanPrint(btle.DefaultDelegate):
         for (adTypeCode, _, val) in scanEntry.getScanData():
             if adTypeCode == 0xff and val[0:6] == "4c0012":
                 print("Apple device discovered")
-                print(val)
                 data = unhexlify(val)
                 # Apple advertisement
                 first_byte = int(scanEntry.addr[0:2], 16) & 0b00111111
@@ -152,6 +151,8 @@ class ScanPrint(btle.DefaultDelegate):
                     for candidate in key['advertised_prefixes']:
                         if candidate.startswith(key_prefix):
                             print("Got notificaton from " + key['name'] + " with signal strength " + scanEntry.rssi + "dBm")
+                        else:
+                            print("Advertised key " + candidate + " from " + key['name'] + " does not match ")
 
 def update_keys_as_required():
     """
