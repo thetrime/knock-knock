@@ -125,25 +125,24 @@ class ScanPrint(btle.DefaultDelegate):
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
         print("device discovered")
-        for (_, _, val) in scanEntry.getScanData():
-            print(val)
-            if val[1:4] == "FF4C0012":
+        for (adTypeCode, _, val) in scanEntry.getScanData():
+            if adTypeCode == 0xff and val[0:6] == "4c0012":
                 print("Apple device discovered")
                 # Apple advertisement
                 first_byte = int(scanEntry.addr[0:1], 16)
                 key_prefix = scanEntry.addr.replace(":", "")
-                # status = val[6]. This contains the battery info and whether the AirTag was seen by its owner recently
-                if val[5] == 25: # Full key. Rest of the key is in val[7:28] but we don't really need it - just the prefix
+                # status = val[6:7]. This contains the battery info and whether the AirTag was seen by its owner recently
+                if val[5] == 25: # Full key. Rest of the key is in val[8:..] but we don't really need it - just the prefix
                     special_bits = int(val[29], 16)
                     first_byte ^= (special_bits << 6)
                 elif val[5] == 2: # Partial key
                     special_bits = int(val[7], 16)
                     first_byte ^= (special_bits << 6)
-                first_byte &= 0xff
+                first_byte &= 0xff                
                 if first_byte < 0x10:
-                    key_prefix[0] = "0" + hex(first_byte)
+                    key_prefix = "0x0" + hex(first_byte)[2] + key_prefix
                 else:
-                    key_prefix[0] = hex(first_byte)
+                    key_prefix = hex(first_byte) + key_prefix
                 print("Key prefix is: " + candidate)
                 for key in keys:
                     for candidate in key['advertised_prefixes']:
