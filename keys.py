@@ -131,16 +131,16 @@ class ScanPrint(btle.DefaultDelegate):
                 print(val)
                 data = unhexlify(val)
                 # Apple advertisement
-                first_byte = int(scanEntry.addr[0:1], 16)
-                key_prefix = scanEntry.addr.replace(":", "")
+                first_byte = int(scanEntry.addr[0:2], 16) & 0b00111111
+                key_prefix = scanEntry.addr.replace(":", "")[2:]
                 # status = val[6:7]. This contains the battery info and whether the AirTag was seen by its owner recently
                 if data[5] == 25: # Full key. Rest of the key is in val[8:..] but we don't really need it - just the prefix
-                    special_bits = data[29]
-                    first_byte ^= ((special_bits << 6) & 96)
+                    special_bits = data[27]
+                    first_byte |= ((special_bits << 6) & 0b11000000)
                 elif data[5] == 2: # Partial key
-                    special_bits = data[7]
-                    first_byte ^= ((special_bits << 6) & 96)
-                first_byte &= 0xff                
+                    special_bits = data[5]
+                    first_byte |= ((special_bits << 6) & 0b11000000)
+                first_byte &= 0xff
                 if first_byte < 0x10:
                     key_prefix = "0x0" + hex(first_byte)[2] + key_prefix
                 else:
