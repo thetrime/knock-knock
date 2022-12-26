@@ -31,6 +31,7 @@ Note that we do not technically need the private key - the public one would do. 
 # To do:
    * Use the public, rather than private key
    * Document how to decrypt the .record files
+   * See if I can get this working inside the devcontainer. There are potentially just permission problems holding it up.
 
 # How the BLE advertisement corresponds to the advertised key
 ## Worked example
