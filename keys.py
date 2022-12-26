@@ -126,6 +126,7 @@ class ScanPrint(btle.DefaultDelegate):
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
         print("device discovered")
         for (_, _, val) in scanEntry.getScanData():
+            print(val)
             if val[1:4] == "FF4C0012":
                 print("Apple device discovered")
                 # Apple advertisement
