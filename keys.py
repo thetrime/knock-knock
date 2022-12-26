@@ -148,7 +148,7 @@ class ScanPrint(btle.DefaultDelegate):
                     key_prefix = hex(first_byte) + key_prefix
                 # print("Key prefix is: " + key_prefix + " from address " + scanEntry.addr)
                 for key in keys:
-                    for candidate in key['advertised_prefixes']:
+                    for candidate in list(key['advertised_prefixes']):
                         if candidate.startswith(key_prefix):
                             print(f"Got notificaton from {key['name']} with signal strength {scanEntry.rssi} dBm")
 
