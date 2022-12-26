@@ -181,7 +181,8 @@ def main():
 
     # Now we can start to update the keys
     print("Scheduling keyroller")
-    threading.Thread(target=update_keys_as_required, daemon=True)
+    thread = threading.Thread(target=update_keys_as_required, daemon=True)
+    thread.start()
     print("Preparing scanner")
     scanner = btle.Scanner(0).withDelegate(ScanPrint())
     print("Scanning")
