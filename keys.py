@@ -3,7 +3,7 @@ Find AirTags that you own without involving Apple in the process
 """
 from binascii import unhexlify
 from datetime import datetime
-from time import time
+from time import time, sleep
 from collections import deque
 import threading
 
@@ -164,7 +164,7 @@ def update_keys_as_required():
             while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
                 print("Updating key for " + key['name'])
                 update_key(key, False)
-        time.sleep(60)                
+        sleep(60)                
 
 
 def main():
