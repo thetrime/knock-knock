@@ -1,3 +1,3 @@
 ecdsa
-cryptography
+cryptography>3.1
 bluepy

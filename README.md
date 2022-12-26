@@ -1,6 +1,5 @@
-Notes:
-  Whitepaper and Apple disagree on which bits are stored in the chopped-up byte. Whitepaper says low 5 bits in the first and high 2 in the last, and Apple says high 5 bits in the first and low 2 in the last.
-
+# Installation
+## Running as a non-root user
 To run this as a non-root user, you need to grant some rights to bluepy-helper. First, find it:
 ```
 find /usr/local/lib -name bluepy-helper
@@ -11,6 +10,31 @@ Then for each one:
 sudo setcap 'cap_net_raw,cap_net_admin+eip' <path to bluepy-helper>
 ```
 
+## Installing cryptography
+This requires either a later version of pip or rust to be installed
+
+# Usage
+You need a file called `keys` which contains lines with 3 values:
+   1) The time of pairing 
+   2) The shared secret
+   3) The private key (_just_ the private part)
+   4) A label for the key
+
+You can get this data from the `.record` files in `~/Library/com.apple.icloud/searchpartyd/OwnedBeacons`, after decrypting them
+   1) paringDate
+   2) sharedSecret.key.data
+   3) privateKey.key.data
+   4) Whatever you like
+
+Note that we do not technically need the private key - the public one would do. You just have to change the code around `# Compute P_1` that computes p_0 - this is the public part, deriving it from the private part. We could skip that and just supply the public part (future work!)
+
+# To do:
+   * Use the public, rather than private key
+   * Document how to decrypt the .record files
+
+# How the BLE advertisement corresponds to the advertised key
+## Worked example
+```
 Example:
 Address: FB6D083D25A4
 Data:    1EFF4C001219102807CE0B3C33332ED37B5D9D8291B1D99D0B8615189700E0
@@ -53,3 +77,4 @@ Payload:
 [11]    02: OF length (2 bytes)
 [12]    54: Status (0b1010100: Battery full. Owner saw it recently)
 [13]    02: First 2 bits of key are 0b11, yielding 0b11011111 which is just df
+```

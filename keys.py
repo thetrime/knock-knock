@@ -70,7 +70,8 @@ def load_keys():
     """
     keyfile = open("keys", "r", encoding="utf-8")
     min_t = time() - 12*60*60
-    for line in keyfile:
+    key_lines = keyfile.read().splitlines()
+    for line in key_lines:
         if line.startswith("#"):
             continue
         chunks = line.split(" ")
