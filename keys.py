@@ -127,6 +127,7 @@ class ScanPrint(btle.DefaultDelegate):
         print("device discovered")
         for (_, _, val) in scanEntry.getScanData():
             if val[1:4] == "FF4C0012":
+                print("Apple device discovered")
                 # Apple advertisement
                 first_byte = int(scanEntry.addr[0:1], 16)
                 key_prefix = scanEntry.addr.replace(":", "")
@@ -142,6 +143,7 @@ class ScanPrint(btle.DefaultDelegate):
                     key_prefix[0] = "0" + hex(first_byte)
                 else:
                     key_prefix[0] = hex(first_byte)
+                print("Key prefix is: " + candidate)
                 for key in keys:
                     for candidate in key['advertised_prefixes']:
                         if candidate.startsWith(key_prefix):
