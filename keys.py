@@ -146,13 +146,11 @@ class ScanPrint(btle.DefaultDelegate):
                     key_prefix = "0x0" + hex(first_byte)[2] + key_prefix
                 else:
                     key_prefix = hex(first_byte) + key_prefix
-                print("Key prefix is: " + key_prefix + " from address " + scanEntry.addr)
+                # print("Key prefix is: " + key_prefix + " from address " + scanEntry.addr)
                 for key in keys:
                     for candidate in key['advertised_prefixes']:
                         if candidate.startswith(key_prefix):
-                            print("Got notificaton from " + key['name'] + " with signal strength " + scanEntry.rssi + "dBm")
-                        else:
-                            print("Advertised key " + candidate + " from " + key['name'] + " does not match ")
+                            print(f"Got notificaton from {key['name']} with signal strength {scanEntry.rssi} dBm")
 
 def update_keys_as_required():
     """
@@ -164,7 +162,7 @@ def update_keys_as_required():
             while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
                 print("Updating key for " + key['name'])
                 update_key(key, False)
-        sleep(60)                
+        sleep(60)
 
 
 def main():
