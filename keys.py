@@ -55,11 +55,11 @@ def update_key(key, echo):
     if echo:
         print(date_time + " " + hex(p_1.x()) + ": " + key['name'])
     if len(key['advertised_prefixes']) > WINDOW_SIZE:
-        key['advertised_prefixes'].popLeft()
+        key['advertised_prefixes'].popleft()
     # We only really care about the first 6 bytes of the key.
     # In the near-to-owner case, this is all that is advertised..
     # The full key is only needed if we want to upload a finding-report to Apple
-    key['advertised_prefixes'].append(hex(p_1.x()[0:5]))
+    key['advertised_prefixes'].append(hex(p_1.x())[0:5])
     key['time'] = t_i
     key['shared_key'] = sk_1
 
@@ -68,7 +68,7 @@ def load_keys():
     Load stashed keys
     """
     keyfile = open("keys", "r", encoding="utf-8")
-    min_t = time.now() - 12*60*60
+    min_t = time() - 12*60*60
     for line in keyfile:
         if line.startswith("#"):
             continue
@@ -124,6 +124,7 @@ class ScanPrint(btle.DefaultDelegate):
         btle.DefaultDelegate.__init__(self)
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
+        print("device discovered")
         for (_, _, val) in scanEntry.getScanData():
             if val[1:4] == "FF4C0012":
                 # Apple advertisement
@@ -161,9 +162,17 @@ def main():
     """
     I have to document main()?
     """
+    print("Loading keys")
     load_keys()
+    print("Loaded %d keys. Rehydrating..." % len(keys))
     rehydrate_keys()
+    print("Keys rehydrated. Stashing hydrated keys")
     stash_keys()
+    print("Scheduling keyroller")
     update_keys_as_required()
+    print("Scanning for devices")
     scanner = btle.Scanner(0).withDelegate(ScanPrint())
     scanner.scan(0)
+
+if __name__ == "__main__":
+    main()
