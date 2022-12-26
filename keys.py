@@ -139,7 +139,7 @@ class ScanPrint(btle.DefaultDelegate):
                 elif data[5] == 2: # Partial key
                     special_bits = data[5]
                 else:
-                    print("Bad special bits: " + data[5])
+                    print("Bad special bits %d " % data[5])
                 first_byte |= ((special_bits << 6) & 0b11000000)
                 first_byte &= 0xff
                 print(first_byte)
