@@ -59,7 +59,8 @@ def update_key(key, echo):
     # We only really care about the first 6 bytes of the key.
     # In the near-to-owner case, this is all that is advertised..
     # The full key is only needed if we want to upload a finding-report to Apple
-    key['advertised_prefixes'].append(hex(p_1.x())[0:5])
+    new_prefix = hex(p_1.x())[2:14]
+    key['advertised_prefixes'].append(new_prefix)
     key['time'] = t_i
     key['shared_key'] = sk_1
 
@@ -109,7 +110,7 @@ def stash_keys():
             "Z " +
             key['shared_key'].hex() +
             " " +
-            hex(key['private_key']) +
+            hex(key['private_key'])[2:] +
             " " +
             key['name'] +
             "\n"
@@ -170,9 +171,10 @@ def main():
     print("Loading keys")
     load_keys()
     print("Loaded %d keys. Rehydrating..." % len(keys))
-   # rehydrate_keys()
+    rehydrate_keys()
     print("Keys rehydrated. Stashing hydrated keys")
     stash_keys()
+
     print("Scheduling keyroller")
     threading.Thread(target=update_keys_as_required, daemon=True)
     print("Preparing scanner")
