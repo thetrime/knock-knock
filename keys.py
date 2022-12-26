@@ -149,7 +149,7 @@ class ScanPrint(btle.DefaultDelegate):
                 print("Key prefix is: " + key_prefix + " from address " + scanEntry.addr)
                 for key in keys:
                     for candidate in key['advertised_prefixes']:
-                        if candidate.startsWith(key_prefix):
+                        if candidate.startswith(key_prefix):
                             print("Got notificaton from " + key['name'] + " with signal strength " + scanEntry.rssi + "dBm")
 
 def update_keys_as_required():
