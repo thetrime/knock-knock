@@ -107,7 +107,7 @@ def stash_keys():
     """
     # Save keys so we dont have to do this next time
     print("All keys updated. Saving...")
-    out = open("keys2", "w", encoding="utf-8")
+    out = open("keys", "w", encoding="utf-8")
     for key in keys:
         out.write(
             datetime.fromtimestamp(key['time']).isoformat(timespec='milliseconds') +
