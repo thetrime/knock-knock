@@ -42,6 +42,8 @@ If you have a Mac that is synced with the same iCloud account that owns the AirT
 
 - Use the public, rather than private key
 - See if I can get this working inside the devcontainer. There are potentially just permission problems holding it up.
+- Consume the rehydrated keys rather than the frozen ones. This seems safe enough now. They can always be regenerated from the decryptor if necessary
+- Periodically save the rehydrated keys. This is a bit more tricky because we only want to save keys from a few hours ago, and we do not generally keep enough keys around for this
 
 # How the BLE advertisement corresponds to the advertised key
 
