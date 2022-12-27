@@ -1,40 +1,52 @@
 # Installation
+
 ## Running as a non-root user
+
 To run this as a non-root user, you need to grant some rights to bluepy-helper. First, find it:
+
 ```
 find /usr/local/lib -name bluepy-helper
 ```
 
 Then for each one:
+
 ```
 sudo setcap 'cap_net_raw,cap_net_admin+eip' <path to bluepy-helper>
 ```
 
 ## Installing cryptography
+
 This requires either a later version of pip or rust to be installed
 
 # Usage
+
 You need a file called `keys` which contains lines with 3 values:
-   1) The time of pairing 
-   2) The shared secret
-   3) The private key (_just_ the private part)
-   4) A label for the key
+
+1.  The time of pairing
+2.  The shared secret
+3.  The private key (_just_ the private part)
+4.  A label for the key
 
 You can get this data from the `.record` files in `~/Library/com.apple.icloud/searchpartyd/OwnedBeacons`, after decrypting them
-   1) paringDate
-   2) sharedSecret.key.data
-   3) privateKey.key.data
-   4) Whatever you like
+
+1.  paringDate
+2.  sharedSecret.key.data
+3.  privateKey.key.data
+4.  Whatever you like
 
 Note that we do not technically need the private key - the public one would do. You just have to change the code around `# Compute P_1` that computes p_0 - this is the public part, deriving it from the private part. We could skip that and just supply the public part (future work!)
 
+If you have a Mac that is synced with the same iCloud account that owns the AirTags, in the directory `decryptor` in this repository is a simple Swift program that will generate this file for you for all the devices you own.
+
 # To do:
-   * Use the public, rather than private key
-   * Document how to decrypt the .record files
-   * See if I can get this working inside the devcontainer. There are potentially just permission problems holding it up.
+
+- Use the public, rather than private key
+- See if I can get this working inside the devcontainer. There are potentially just permission problems holding it up.
 
 # How the BLE advertisement corresponds to the advertised key
+
 ## Worked example
+
 ```
 Example:
 Address: FB6D083D25A4
