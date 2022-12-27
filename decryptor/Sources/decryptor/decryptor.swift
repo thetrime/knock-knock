@@ -33,8 +33,8 @@ public struct decryptor {
                 let id = decrypted["identifier"] as! String
                 let name = findName(from: id, usingPassword: passwordData)
                 let sharedSecret = ((((decrypted["sharedSecret"] as! [String:Any]) ["key"]) as! [String:Any]) ["data"]! as! Data).hexEncodedString()
-                let privateKey = ((((decrypted["privateKey"] as! [String:Any]) ["key"]) as! [String:Any]) ["data"]! as! Data).hexEncodedString()
-                print("\(formatter.string(from:pairingDate)) \(sharedSecret) \(privateKey) \(name)")
+                let publicKey = ((((decrypted["publicKey"] as! [String:Any]) ["key"]) as! [String:Any]) ["data"]! as! Data).hexEncodedString()
+                print("\(formatter.string(from:pairingDate)) \(sharedSecret) \(publicKey) \(name)")
             }
         } catch {
             print(error)

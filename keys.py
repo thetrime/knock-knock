@@ -10,7 +10,7 @@ import threading
 from bluepy import btle
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.x963kdf import X963KDF
-#from ecdsa.ellipticcurve import Point
+from ecdsa.ellipticcurve import Point
 from ecdsa.curves import NIST224p
 
 keys = []
@@ -49,7 +49,7 @@ def update_key(key, echo):
     v_1 = (v_1 % (n-1)) + 1
 
     # Compute P_1
-    p_0 = key['private_key'] * G
+    p_0 = Point(NIST224p.curve, key['pkx'], key['pky'])
     p_1 = u_1 * p_0 + v_1 * G
     date_time = datetime.fromtimestamp(t_i).strftime("%Y-%m-%d %H:%M:%S")
     if echo:
@@ -80,10 +80,13 @@ def load_keys():
         t_0 = (dt_0 - datetime(1970, 1, 1)).total_seconds()
         if t_0 < min_t:
             min_t = t_0
+        pkx = chunks[2][2:58]
+        pky = chunks[2][58:]
         keys.append({
             'time': t_0,
             'shared_key': unhexlify(chunks[1]),
-            'private_key': int.from_bytes(unhexlify(chunks[2]), ENDIANNESS),
+            'pkx': int.from_bytes(unhexlify(pkx), ENDIANNESS),
+            'pky': int.from_bytes(unhexlify(pky), ENDIANNESS),
             'name': " ".join(chunks[3:]),
             'advertised_prefixes': deque()
         })
@@ -111,7 +114,8 @@ def stash_keys():
             "Z " +
             key['shared_key'].hex() +
             " " +
-            hex(key['private_key'])[2:] +
+            hex(key['pkx'])[2:] +
+            hex(key['pky'])[2:] +
             " " +
             key['name'] +
             "\n"
