@@ -65,7 +65,7 @@ def main():
         GPIO.add_event_detect(switch, GPIO.FALLING, callback=handle_switch, bouncetime=200)
     set_leds()
     print("GPIO configured")
-    tags.append(airtag.setup("keys"))
+    tags.extend(airtag.setup("keys"))
     print(f"Configured tags {tags}")
     airtag.start(handle_tag)
     GPIO.cleanup()
