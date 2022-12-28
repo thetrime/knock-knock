@@ -76,7 +76,7 @@ def load_keys(filename):
             continue
         chunks = line.split(" ")
         sync_time = chunks[0]
-        dt_0 = datetime.strptime(sync_time, '%Y-%m-%dT%H:%M:%S.%fZ')
+        dt_0 = datetime.strptime(sync_time, '%Y-%m-%dT%H:%M:%SZ')
         t_0 = (dt_0 - datetime(1970, 1, 1)).total_seconds()
         if t_0 < min_t:
             min_t = t_0
@@ -110,7 +110,7 @@ def stash_keys(filename):
     out = open(filename, "w", encoding="utf-8")
     for key in keys:
         out.write(
-            datetime.fromtimestamp(key['time']).isoformat(timespec='milliseconds') +
+            datetime.fromtimestamp(key['time']).isoformat(timespec='seconds') +
             "Z " +
             key['shared_key'].hex() +
             " " +
