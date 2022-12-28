@@ -17,7 +17,7 @@ def set_leds():
     Set the LEDs to the current state
     """
     print(f"Setting LEDs to {state}")
-    for (channel, state) in zip(leds, state):
+    for (channel, state) in zip(leds, states):
         GPIO.output(channel, GPIO.LOW if state else GPIO.HIGH)
 
 def handle_switch(channel):
