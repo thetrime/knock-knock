@@ -17,8 +17,8 @@ def set_leds():
     Set the LEDs to the current state
     """
     print(f"Setting LEDs to {state}")
-    for i in range(len(state)):
-        GPIO.output(leds[i], GPIO.HIGH if state[i] else GPIO.LOW)
+    for (channel, state) in zip(leds, state):
+        GPIO.output(channel, GPIO.LOW if state else GPIO.HIGH)
 
 def handle_switch(channel):
     """
@@ -56,6 +56,8 @@ def main():
     """
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(DOORBELL, GPIO.OUT)
+    # High turns the doorbell off
+    GPIO.output(DOORBELL, GPIO.HIGH)
     for led in leds:
         GPIO.setup(led, GPIO.OUT)
     for switch in switches:
