@@ -64,11 +64,11 @@ def update_key(key, echo):
     key['time'] = t_i
     key['shared_key'] = sk_1
 
-def load_keys():
+def load_keys(filename):
     """
     Load stashed keys
     """
-    keyfile = open("keys", "r", encoding="utf-8")
+    keyfile = open(filename, "r", encoding="utf-8")
     min_t = time() - 12*60*60
     key_lines = keyfile.read().splitlines()
     for line in key_lines:
@@ -101,13 +101,13 @@ def rehydrate_keys():
         while key['time'] < time() - (WINDOW_SIZE/2) * 15 * 60:
             update_key(key, False)
 
-def stash_keys():
+def stash_keys(filename):
     """
     Save current key state
     """
     # Save keys so we dont have to do this next time
     print("All keys updated. Saving...")
-    out = open("keys", "w", encoding="utf-8")
+    out = open(filename, "w", encoding="utf-8")
     for key in keys:
         out.write(
             datetime.fromtimestamp(key['time']).isoformat(timespec='milliseconds') +
@@ -126,10 +126,14 @@ class ScanPrint(btle.DefaultDelegate):
     """
     Delegate class to handle BLE scan callback
     """
-    def __init__(self):
+    def __init__(self, callback):
         btle.DefaultDelegate.__init__(self)
+        self.callback = callback
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
+        """
+        Callback from bluepy when a device is discovered
+        """
         for (code_type, _, val) in scanEntry.getScanData():
             if code_type == 0xff and val[0:6] == "4c0012":
                 # print("Apple device discovered")
@@ -158,7 +162,8 @@ class ScanPrint(btle.DefaultDelegate):
                 for key in keys:
                     for candidate in list(key['advertised_prefixes']):
                         if candidate.startswith(key_prefix):
-                            print(f"Got notificaton from {key['name']} with signal strength {scanEntry.rssi} dBm")
+                            self.callback(key['name'], scanEntry.rssi)
+                            # print(f"Got notificaton from {key['name']} with signal strength {scanEntry.rssi} dBm")
 
 def update_keys_as_required():
     """
@@ -172,26 +177,31 @@ def update_keys_as_required():
         sleep(60)
 
 
-def main():
+def setup(filename):
     """
-    I have to document main()?
+    Prepare the key data in filename
     """
     print("Loading keys")
-    load_keys()
+    load_keys(filename)
     print(f"Loaded {len(keys)} keys. Rehydrating...")
     # We stash the keys after rehydrating. To avoid getting too far ahead, we keep WINDOW_SIZE/2 blocks behind
     rehydrate_keys()
     print("Keys rehydrated. Stashing hydrated keys")
-    stash_keys()
+    stash_keys(filename)
+    return [key['name'] for key in keys]
 
+def start(callback):
+    """
+    Start running the collector
+    """
     # Now we can start to update the keys
     print("Scheduling keyroller")
     thread = threading.Thread(target=update_keys_as_required, daemon=True)
     thread.start()
     print("Preparing scanner")
-    scanner = btle.Scanner(0).withDelegate(ScanPrint())
+    scanner = btle.Scanner(0).withDelegate(ScanPrint(callback))
     print("Scanning")
     scanner.scan(0)
 
 if __name__ == "__main__":
-    main()
+    setup('keys')

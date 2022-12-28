@@ -1,3 +1,4 @@
 ecdsa
 cryptography>3.1
 bluepy
+RPi.GPIO
