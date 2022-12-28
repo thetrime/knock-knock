@@ -181,6 +181,7 @@ def update_keys_as_required():
         for key in keys:
             while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
                 update_key(key, True)
+        print("Key schedule is current")
         sleep(60)
 
 
