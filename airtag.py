@@ -19,7 +19,7 @@ G = NIST224p.generator
 n = NIST224p.order
 WINDOW_SIZE = 10
 
-def update_key(key, echo):
+def update_key(key, update_advertised):
     """
     Update a given key to the next key period
     """
@@ -31,36 +31,33 @@ def update_key(key, echo):
         sharedinfo=b"update",
     )
     sk_1 = xkdf.derive(key['shared_key'])
+    if update_advertised:
+        # Derive AT_1 from SK_1
+        xkdf = X963KDF(
+            algorithm=hashes.SHA256(),
+            length=72,
+            sharedinfo=b"diversify",
+        )
+        at_1 = xkdf.derive(sk_1)
 
-    # Derive AT_1 from SK_1
-    xkdf = X963KDF(
-        algorithm=hashes.SHA256(),
-        length=72,
-        sharedinfo=b"diversify",
-    )
-    at_1 = xkdf.derive(sk_1)
+        # Derive u_1 and v_1 from this
+        u_1 = int.from_bytes(at_1[:36], ENDIANNESS)
+        v_1 = int.from_bytes(at_1[36:], ENDIANNESS)
 
-    # Derive u_1 and v_1 from this
-    u_1 = int.from_bytes(at_1[:36], ENDIANNESS)
-    v_1 = int.from_bytes(at_1[36:], ENDIANNESS)
+        # Reduce u and v into P-224 scalars
+        u_1 = (u_1 % (n-1)) + 1
+        v_1 = (v_1 % (n-1)) + 1
 
-    # Reduce u and v into P-224 scalars
-    u_1 = (u_1 % (n-1)) + 1
-    v_1 = (v_1 % (n-1)) + 1
-
-    # Compute P_1
-    p_0 = Point(NIST224p.curve, key['pkx'], key['pky'])
-    p_1 = u_1 * p_0 + v_1 * G
-    date_time = datetime.fromtimestamp(t_i).strftime("%Y-%m-%d %H:%M:%S")
-    if echo:
-        print(date_time + " " + hex(p_1.x()) + ": " + key['name'])
-    if len(key['advertised_prefixes']) > WINDOW_SIZE:
-        key['advertised_prefixes'].popleft()
-    # We only really care about the first 6 bytes of the key.
-    # In the near-to-owner case, this is all that is advertised..
-    # The full key is only needed if we want to upload a finding-report to Apple
-    new_prefix = hex(p_1.x())[0:14]
-    key['advertised_prefixes'].append(new_prefix)
+        # Compute P_1
+        p_1 = u_1 * key['p_0'] + v_1 * G
+        date_time = datetime.fromtimestamp(t_i).strftime("%Y-%m-%d %H:%M:%S")
+        if len(key['advertised_prefixes']) > WINDOW_SIZE:
+            key['advertised_prefixes'].popleft()
+        # We only really care about the first 6 bytes of the key.
+        # In the near-to-owner case, this is all that is advertised..
+        # The full key is only needed if we want to upload a finding-report to Apple
+        new_prefix = hex(p_1.x())[0:14]
+        key['advertised_prefixes'].append(new_prefix)
     key['time'] = t_i
     key['shared_key'] = sk_1
 
@@ -82,9 +79,15 @@ def load_keys(filename):
             min_t = t_0
         pkx = chunks[2][2:58]
         pky = chunks[2][58:]
+        p_0 = Point(
+            NIST224p.curve,
+            int.from_bytes(unhexlify(pkx), ENDIANNESS),
+            int.from_bytes(unhexlify(pky), ENDIANNESS)
+        )
         keys.append({
             'time': t_0,
             'shared_key': unhexlify(chunks[1]),
+            'p_0': p_0,
             'pkx': int.from_bytes(unhexlify(pkx), ENDIANNESS),
             'pky': int.from_bytes(unhexlify(pky), ENDIANNESS),
             'name': " ".join(chunks[3:]),
@@ -96,9 +99,13 @@ def rehydrate_keys():
     """
     Refresh all keys until they are at most 12 hours old
     """
-    # Starting from the oldest key, get all the keys up to WINDOW_SIZE/2 * 15 minutes ago
+    # Starting from the oldest key, get all the keys up to 4 hours ago
     for key in keys:
-        while key['time'] < time() - (WINDOW_SIZE/2) * 15 * 60:
+        i = 0
+        while key['time'] < time() - 4 * 60 * 60:
+            i += 1
+            if i % 100 == 0:
+                print(f"Key {key['name']} is at {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')}")
             update_key(key, False)
 
 def stash_keys(filename):
@@ -113,7 +120,7 @@ def stash_keys(filename):
             datetime.fromtimestamp(key['time']).isoformat(timespec='seconds') +
             "Z " +
             key['shared_key'].hex() +
-            " " +
+            " 04" +
             hex(key['pkx'])[2:] +
             hex(key['pky'])[2:] +
             " " +
@@ -173,7 +180,7 @@ def update_keys_as_required():
     while True:
         for key in keys:
             while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
-                update_key(key, False)
+                update_key(key, True)
         sleep(60)
 
 
