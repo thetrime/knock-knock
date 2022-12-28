@@ -9,14 +9,14 @@ DOORBELL = 10
 switches = [9, 11]
 leds = [24, 25]
 
-state = [False, False]
+states = [False, False]
 tags = []
 
 def set_leds():
     """
     Set the LEDs to the current state
     """
-    print(f"Setting LEDs to {state}")
+    print(f"Setting LEDs to {states}")
     for (channel, state) in zip(leds, states):
         GPIO.output(channel, GPIO.LOW if state else GPIO.HIGH)
 
@@ -25,7 +25,7 @@ def handle_switch(channel):
     Handle the switch being depressed
     """
     print("Switch detected")
-    state[switches.index(channel)] = True
+    states[switches.index(channel)] = True
     set_leds()
 
 def ring_doorbell():
@@ -45,8 +45,8 @@ def handle_tag(name, rssi):
     if rssi > -40:
         index = tags.index(name)
         if index != -1:
-            if state[index]:
-                state[index] = False
+            if states[index]:
+                states[index] = False
                 set_leds()                
                 ring_doorbell()
 
