@@ -16,6 +16,7 @@ def set_leds():
     """
     Set the LEDs to the current state
     """
+    print(f"Setting LEDs to {state}")
     for i in range(len(state)):
         GPIO.output(leds[i], GPIO.HIGH if state[i] else GPIO.LOW)
 
@@ -23,6 +24,7 @@ def handle_switch(channel):
     """
     Handle the switch being depressed
     """
+    print("Switch detected")
     state[switches.index(channel)] = True
     set_leds()
 
@@ -30,6 +32,7 @@ def ring_doorbell():
     """
     Ring the doorbell
     """
+    print("Ding dong")
     GPIO.output(DOORBELL, GPIO.LOW)
     time.sleep(2)
     GPIO.output(DOORBELL, GPIO.HIGH)
@@ -38,13 +41,14 @@ def handle_tag(name, rssi):
     """
     Handle a report that a tag has been located
     """
+    print(f"Tag {name} detected at {rssi}")
     if rssi > -40:
         index = tags.index(name)
         if index != -1:
             if state[index]:
-                ring_doorbell()
                 state[index] = False
-                set_leds()
+                set_leds()                
+                ring_doorbell()
 
 def main():
     """
@@ -57,7 +61,9 @@ def main():
     for switch in switches:
         GPIO.setup(switch, GPIO.IN)
         GPIO.add_event_detect(switch, GPIO.RISING, callback=handle_switch)
+    print("GPIO configured")
     tags.append(airtag.setup("keys"))
+    print(f"Configured tags {tags}")
     airtag.start(handle_tag)
     GPIO.cleanup()
 
