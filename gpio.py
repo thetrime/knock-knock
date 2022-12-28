@@ -62,7 +62,7 @@ def main():
         GPIO.setup(led, GPIO.OUT)
     for switch in switches:
         GPIO.setup(switch, GPIO.IN)
-        GPIO.add_event_detect(switch, GPIO.RISING, callback=handle_switch)
+        GPIO.add_event_detect(switch, GPIO.FALLING, callback=handle_switch)
     set_leds()
     print("GPIO configured")
     tags.append(airtag.setup("keys"))
