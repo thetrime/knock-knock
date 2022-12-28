@@ -25,7 +25,7 @@ def handle_switch(channel):
     Handle the switch being depressed
     """
     print("Switch detected")
-    states[switches.index(channel)] = True
+    states[switches.index(channel)] ^= True
     set_leds()
 
 def ring_doorbell():
@@ -61,8 +61,8 @@ def main():
     for led in leds:
         GPIO.setup(led, GPIO.OUT)
     for switch in switches:
-        GPIO.setup(switch, GPIO.IN)
-        GPIO.add_event_detect(switch, GPIO.FALLING, callback=handle_switch)
+        GPIO.setup(switch, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(switch, GPIO.FALLING, callback=handle_switch, bouncetime=200)
     set_leds()
     print("GPIO configured")
     tags.append(airtag.setup("keys"))
