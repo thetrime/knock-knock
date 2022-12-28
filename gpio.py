@@ -42,7 +42,7 @@ def handle_tag(name, rssi):
     Handle a report that a tag has been located
     """
     print(f"Tag {name} detected at {rssi}")
-    if rssi > -40:
+    if rssi > -60:
         index = tags.index(name)
         if index != -1:
             if states[index]:
