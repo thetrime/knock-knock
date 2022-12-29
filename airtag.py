@@ -50,7 +50,6 @@ def update_key(key, update_advertised):
 
         # Compute P_1
         p_1 = u_1 * key['p_0'] + v_1 * G
-        date_time = datetime.fromtimestamp(t_i).strftime("%Y-%m-%d %H:%M:%S")
         if len(key['advertised_prefixes']) > WINDOW_SIZE:
             key['advertised_prefixes'].popleft()
         # We only really care about the first 6 bytes of the key.
@@ -58,6 +57,13 @@ def update_key(key, update_advertised):
         # The full key is only needed if we want to upload a finding-report to Apple
         new_prefix = hex(p_1.x())[0:14]
         key['advertised_prefixes'].append(new_prefix)
+
+    # If the trace key is now at least 4 hours old, we can stash it
+    if t_i > key['trace_time'] + 4 * 60 * 60:
+        if update_advertised:
+            stash_keys('keys')
+        key['trace'] = sk_1
+        key['trace_time'] = t_i
     key['time'] = t_i
     key['shared_key'] = sk_1
 
@@ -91,20 +97,23 @@ def load_keys(filename):
             'pkx': int.from_bytes(unhexlify(pkx), ENDIANNESS),
             'pky': int.from_bytes(unhexlify(pky), ENDIANNESS),
             'name': " ".join(chunks[3:]),
-            'advertised_prefixes': deque()
+            'advertised_prefixes': deque(),
+            'trace': unhexlify(chunks[1]),
+            'trace_time': t_0
         })
     keyfile.close()
 
 def rehydrate_keys():
     """
-    Refresh all keys until they are at most 12 hours old
+    Refresh all keys until they are at most 4 hours old
     """
-    # Starting from the oldest key, get all the keys up to 4 hours ago
+    # Get all the keys up to date as of 4 hours ago
     for key in keys:
         i = 0
         while key['time'] < time() - 4 * 60 * 60:
             i += 1
-            if i % 100 == 0:
+            if i == 96:
+                i = 0
                 print(f"Key {key['name']} is at {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')}")
             update_key(key, False)
 
@@ -117,9 +126,9 @@ def stash_keys(filename):
     out = open(filename, "w", encoding="utf-8")
     for key in keys:
         out.write(
-            datetime.fromtimestamp(key['time']).isoformat(timespec='seconds') +
+            datetime.fromtimestamp(key['trace_time']).isoformat(timespec='seconds') +
             "Z " +
-            key['shared_key'].hex() +
+            key['trace'].hex() +
             " 04" +
             hex(key['pkx'])[2:] +
             hex(key['pky'])[2:] +
