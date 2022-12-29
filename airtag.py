@@ -6,6 +6,7 @@ from datetime import datetime
 from time import time, sleep
 from collections import deque
 import threading
+import sys
 
 from bluepy import btle
 from cryptography.hazmat.primitives import hashes
@@ -94,8 +95,7 @@ def load_keys(filename):
             'time': t_0,
             'shared_key': unhexlify(chunks[1]),
             'p_0': p_0,
-            'pkx': int.from_bytes(unhexlify(pkx), ENDIANNESS),
-            'pky': int.from_bytes(unhexlify(pky), ENDIANNESS),
+            'public_key': chunks[2],
             'name': " ".join(chunks[3:]),
             'advertised_prefixes': deque(),
             'trace': unhexlify(chunks[1]),
@@ -110,12 +110,17 @@ def rehydrate_keys():
     # Get all the keys up to date as of 4 hours ago
     for key in keys:
         i = 0
+        original_time = key['time']
         while key['time'] < time() - 4 * 60 * 60:
+            p = 100 * ((key['time'] - original_time) / (time() - 4 * 60 * 60 - original_time))
             i += 1
             if i == 96:
                 i = 0
-                print(f"Key {key['name']} is at {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')}")
+                print(f"{p:.2f}% {key['name']}\r", end='')
+                sys.stdout.flush()
+                #print(f"Key {key['name']} is at {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')}")
             update_key(key, False)
+        print(f"{100}% {key['name']}")
 
 def stash_keys(filename):
     """
@@ -129,9 +134,8 @@ def stash_keys(filename):
             datetime.fromtimestamp(key['trace_time']).isoformat(timespec='seconds') +
             "Z " +
             key['trace'].hex() +
-            " 04" +
-            hex(key['pkx'])[2:] +
-            hex(key['pky'])[2:] +
+            " " +
+            key['public_key'] +
             " " +
             key['name'] +
             "\n"
