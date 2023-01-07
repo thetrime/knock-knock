@@ -5,9 +5,13 @@ import time
 import RPi.GPIO as GPIO
 import airtag
 
+# IO pins:
 DOORBELL = 10
 switches = [9, 11]
 leds = [24, 25]
+
+# Tolerance: Once the Airtag is less than MINIMUM_DISTANCE dBm away, the bell will ring
+MINIMUM_DISTANCE=-60
 
 states = [False, False]
 tags = []
@@ -42,7 +46,7 @@ def handle_tag(name, rssi):
     Handle a report that a tag has been located
     """
     print(f"Tag {name} detected at {rssi}")
-    if rssi > -60:
+    if rssi > MINIMUM_DISTANCE:
         index = tags.index(name)
         if index != -1:
             if states[index]:

@@ -1,0 +1,12 @@
+[Unit]
+Description=Doorbell
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python /home/pi/knock-knock/gpio.py
+User=pi
+WorkingDirectory=/home/pi/knock-knock
+
+[Install]
+WantedBy=multi-user.target

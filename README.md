@@ -1,11 +1,33 @@
 # Installation
 
-## Running as a non-root user
+## System Prerequisites
+Running with Raspbian Lite, I needed to install libglib2 and pip:
+```
+sudo apt install python3-pip libglib2.0-dev
+```
 
-To run this as a non-root user, you need to grant some rights to bluepy-helper. First, find it:
+## Python requirements
+You can install the requirements with pip:
+```
+pip install -r requirements.txt
+```
+
+(you can also install these as root if you want them available system-wide)
+
+Note that building the `cryptography` module requires a recent version of pip or for rust to be preinstalled. On raspbian, the current version of pip came with a precompiled version; on other operating systems I had to install rust.
+
+## Permissions for running as a non-root user
+
+To run this as a non-root user, you need to grant some rights to bluepy-helper. First, find it - if you installed the python packages with sudo, check here:
 
 ```
 find /usr/local/lib -name bluepy-helper
+```
+
+otherwise, you need to look in your home directory:
+
+```
+find ~ -name bluepy-helper
 ```
 
 Then for each one:
@@ -13,10 +35,6 @@ Then for each one:
 ```
 sudo setcap 'cap_net_raw,cap_net_admin+eip' <path to bluepy-helper>
 ```
-
-## Installing cryptography
-
-This requires either a later version of pip or rust to be installed
 
 # Usage
 
@@ -36,14 +54,7 @@ You can get this data from the `.record` files in `~/Library/com.apple.icloud/se
 
 If you have a Mac that is synced with the same iCloud account that owns the AirTags, in the directory `decryptor` in this repository is a simple Swift program that will generate this file for you for all the devices you own.
 
-# To do:
-
-- See if I can get this working inside the devcontainer. There are potentially just permission problems holding it up.
-- Periodically save the rehydrated keys. This is a bit more tricky because we only want to save keys from a few hours ago, and we do not generally keep enough keys around for this
-- Convert RSSI to approximate distance
-
-# How the BLE advertisement corresponds to the advertised key
-
+# Technical details: How the BLE advertisement corresponds to the advertised key
 ## Worked example
 
 ```
