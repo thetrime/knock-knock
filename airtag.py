@@ -62,11 +62,34 @@ def update_key(key, update_advertised):
     # If the trace key is now at least 4 hours old, we can stash it
     if t_i > key['trace_time'] + 4 * 60 * 60:
         if update_advertised:
-            stash_keys('keys')
+            stash_key("keys", key)
         key['trace'] = sk_1
         key['trace_time'] = t_i
     key['time'] = t_i
     key['shared_key'] = sk_1
+
+def parse_key_line(line):
+    chunks = line.split(" ")
+    sync_time = chunks[0]
+    dt_0 = datetime.strptime(sync_time, '%Y-%m-%dT%H:%M:%SZ')
+    t_0 = (dt_0 - datetime(1970, 1, 1)).total_seconds()
+    pkx = chunks[2][2:58]
+    pky = chunks[2][58:]
+    p_0 = Point(
+        NIST224p.curve,
+        int.from_bytes(unhexlify(pkx), ENDIANNESS),
+        int.from_bytes(unhexlify(pky), ENDIANNESS)
+    )
+    return {
+        'time': t_0,
+        'shared_key': unhexlify(chunks[1]),
+        'p_0': p_0,
+        'public_key': chunks[2],
+        'name': " ".join(chunks[3:]),
+        'advertised_prefixes': deque(),
+        'trace': unhexlify(chunks[1]),
+        'trace_time': t_0
+    }
 
 def load_keys(filename):
     """
@@ -77,30 +100,11 @@ def load_keys(filename):
     key_lines = keyfile.read().splitlines()
     for line in key_lines:
         if line.startswith("#"):
-            continue
-        chunks = line.split(" ")
-        sync_time = chunks[0]
-        dt_0 = datetime.strptime(sync_time, '%Y-%m-%dT%H:%M:%SZ')
-        t_0 = (dt_0 - datetime(1970, 1, 1)).total_seconds()
-        if t_0 < min_t:
-            min_t = t_0
-        pkx = chunks[2][2:58]
-        pky = chunks[2][58:]
-        p_0 = Point(
-            NIST224p.curve,
-            int.from_bytes(unhexlify(pkx), ENDIANNESS),
-            int.from_bytes(unhexlify(pky), ENDIANNESS)
-        )
-        keys.append({
-            'time': t_0,
-            'shared_key': unhexlify(chunks[1]),
-            'p_0': p_0,
-            'public_key': chunks[2],
-            'name': " ".join(chunks[3:]),
-            'advertised_prefixes': deque(),
-            'trace': unhexlify(chunks[1]),
-            'trace_time': t_0
-        })
+            continue        
+        key = parse_key_line(line)
+        if key['time'] < min_t:
+            min_t = key['time']
+        keys.append(key)
     keyfile.close()
 
 def rehydrate_keys():
@@ -141,6 +145,36 @@ def stash_keys(filename):
             "\n"
         )
     out.close()
+
+def stash_key(filename, target):
+    """
+    Save specific key but leave others alone
+    """
+    print(f"Saving key for {target['name']}")
+    existing = []
+    existing_data = open(filename, "r", encoding="utf-8")
+    key_lines = existing_data.read().splitlines()
+    for line in key_lines:
+        if line.startswith("#"):
+            continue        
+        key = parse_key_line(line)
+        if key['name'] == target['name']:
+            existing.append(target)
+        else:
+            existing.append(key)    
+    out = open(filename, "w", encoding="utf-8")
+    for key in existing:
+        out.write(
+            datetime.fromtimestamp(key['trace_time']).isoformat(timespec='seconds') +
+            "Z " +
+            key['trace'].hex() +
+            " " +
+            key['public_key'] +
+            " " +
+            key['name'] +
+            "\n"
+        )
+    out.close()    
 
 class ScanPrint(btle.DefaultDelegate):
     """
