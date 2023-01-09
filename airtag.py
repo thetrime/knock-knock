@@ -59,7 +59,7 @@ def update_key(key, update_advertised):
         # In the near-to-owner case, this is all that is advertised..
         # The full key is only needed if we want to upload a finding-report to Apple
         new_prefix = hex(p_1.x())[0:14]
-        print(f"Expecting prefix for{key['name']} to be {new_prefix}")
+        print(f"Expecting prefix for {key['name']} to be {new_prefix}")
         key['advertised_prefixes'].append(new_prefix)
         key['advertised_times'].append(t_i)
         print(f"We now have prefixes from {datetime.fromtimestamp(key['advertised_times'][0]).isoformat(timespec='seconds')} to {datetime.fromtimestamp(key['advertised_times'][-1]).isoformat(timespec='seconds')}")        
