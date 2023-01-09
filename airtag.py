@@ -92,6 +92,7 @@ def parse_key_line(line):
         'public_key': chunks[2],
         'name': " ".join(chunks[3:]),
         'advertised_prefixes': deque(),
+        'advertised_times': deque(),
         'trace': unhexlify(chunks[1]),
         'trace_time': t_0
     }
