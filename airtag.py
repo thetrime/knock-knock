@@ -32,6 +32,7 @@ def update_key(key, update_advertised):
         sharedinfo=b"update",
     )
     sk_1 = xkdf.derive(key['shared_key'])
+    print(f"Updating key {key['name']} to be current from {datetime.fromtimestamp(t_i).isoformat(timespec='seconds')}")
     if update_advertised:
         # Derive AT_1 from SK_1
         xkdf = X963KDF(
@@ -53,11 +54,15 @@ def update_key(key, update_advertised):
         p_1 = u_1 * key['p_0'] + v_1 * G
         if len(key['advertised_prefixes']) > WINDOW_SIZE:
             key['advertised_prefixes'].popleft()
+            key['advertised_times'].popleft()
         # We only really care about the first 6 bytes of the key.
         # In the near-to-owner case, this is all that is advertised..
         # The full key is only needed if we want to upload a finding-report to Apple
         new_prefix = hex(p_1.x())[0:14]
+        print(f"Expecting prefix for{key['name']} to be {new_prefix}")
         key['advertised_prefixes'].append(new_prefix)
+        key['advertised_times'].append(t_i)
+        print(f"We now have prefixes from {datetime.fromtimestamp(key['advertised_times'][0]).isoformat(timespec='seconds')} to {datetime.fromtimestamp(key['advertised_times'][-1]).isoformat(timespec='seconds')}")        
 
     # If the trace key is now at least 4 hours old, we can stash it
     if t_i > key['trace_time'] + 4 * 60 * 60:
