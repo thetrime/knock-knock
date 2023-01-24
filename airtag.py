@@ -20,6 +20,7 @@ G = NIST224p.generator
 n = NIST224p.order
 WINDOW_SIZE = 10
 
+
 def update_key(key, update_advertised):
     """
     Update a given key to the next key period
@@ -32,7 +33,8 @@ def update_key(key, update_advertised):
         sharedinfo=b"update",
     )
     sk_1 = xkdf.derive(key['shared_key'])
-    print(f"Updating key {key['name']} to be current from {datetime.fromtimestamp(t_i).isoformat(timespec='seconds')}")
+    print(
+        f"Updating key {key['name']} to be current from {datetime.fromtimestamp(t_i).isoformat(timespec='seconds')}")
     if update_advertised:
         # Derive AT_1 from SK_1
         xkdf = X963KDF(
@@ -62,7 +64,7 @@ def update_key(key, update_advertised):
         print(f"Expecting prefix for {key['name']} to be {new_prefix}")
         key['advertised_prefixes'].append(new_prefix)
         key['advertised_times'].append(t_i)
-        print(f"We now have prefixes for {key['name']} from {datetime.fromtimestamp(key['advertised_times'][0]).isoformat(timespec='seconds')} to {datetime.fromtimestamp(key['advertised_times'][-1]).isoformat(timespec='seconds')}")        
+        print(f"We now have prefixes for {key['name']} from {datetime.fromtimestamp(key['advertised_times'][0]).isoformat(timespec='seconds')} to {datetime.fromtimestamp(key['advertised_times'][-1]).isoformat(timespec='seconds')}")
 
     # If the trace key is now at least 4 hours old, we can stash it
     if t_i > key['trace_time'] + 4 * 60 * 60:
@@ -72,6 +74,7 @@ def update_key(key, update_advertised):
         key['trace_time'] = t_i
     key['time'] = t_i
     key['shared_key'] = sk_1
+
 
 def parse_key_line(line):
     chunks = line.split(" ")
@@ -97,6 +100,7 @@ def parse_key_line(line):
         'trace_time': t_0
     }
 
+
 def load_keys(filename):
     """
     Load stashed keys
@@ -106,12 +110,13 @@ def load_keys(filename):
     key_lines = keyfile.read().splitlines()
     for line in key_lines:
         if line.startswith("#"):
-            continue        
+            continue
         key = parse_key_line(line)
         if key['time'] < min_t:
             min_t = key['time']
         keys.append(key)
     keyfile.close()
+
 
 def rehydrate_keys():
     """
@@ -122,15 +127,17 @@ def rehydrate_keys():
         i = 0
         original_time = key['time']
         while key['time'] < time() - 4 * 60 * 60:
-            p = 100 * ((key['time'] - original_time) / (time() - 4 * 60 * 60 - original_time))
+            p = 100 * ((key['time'] - original_time) /
+                       (time() - 4 * 60 * 60 - original_time))
             i += 1
             if i == 96:
                 i = 0
                 print(f"{p:.2f}% {key['name']}\r", end='')
                 sys.stdout.flush()
-                #print(f"Key {key['name']} is at {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')}")
+                # print(f"Key {key['name']} is at {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')}")
             update_key(key, False)
         print(f"{100}% {key['name']}")
+
 
 def stash_keys(filename):
     """
@@ -152,6 +159,7 @@ def stash_keys(filename):
         )
     out.close()
 
+
 def stash_key(filename, target):
     """
     Save specific key but leave others alone
@@ -162,12 +170,12 @@ def stash_key(filename, target):
     key_lines = existing_data.read().splitlines()
     for line in key_lines:
         if line.startswith("#"):
-            continue        
+            continue
         key = parse_key_line(line)
         if key['name'] == target['name']:
             existing.append(target)
         else:
-            existing.append(key)    
+            existing.append(key)
     out = open(filename, "w", encoding="utf-8")
     for key in existing:
         out.write(
@@ -180,15 +188,47 @@ def stash_key(filename, target):
             key['name'] +
             "\n"
         )
-    out.close()    
+    out.close()
+
 
 class ScanPrint(btle.DefaultDelegate):
     """
     Delegate class to handle BLE scan callback
     """
+
     def __init__(self, callback):
         btle.DefaultDelegate.__init__(self)
         self.callback = callback
+
+    def handle_apple_device(self, data, address, rssi):
+        # Apple advertisement
+        first_byte = int(address[0:2], 16) & 0b00111111
+        key_prefix = address.replace(":", "")[2:]
+        # status = val[6:7]
+        # This contains the battery info and whether the
+        # AirTag was seen by its owner recently
+        if data[3] == 25:
+            # Full key. Rest of the key is in val[8:..]
+            # but we don't really need it - just the prefix
+            special_bits = data[27]
+        elif data[3] == 2:  # Partial key
+            special_bits = data[5]
+        else:
+            print(f"Bad special bits {data[5]}")
+        first_byte |= ((special_bits << 6) & 0b11000000)
+        first_byte &= 0xff
+        if first_byte < 0x10:
+            key_prefix = "0x0" + hex(first_byte)[2] + key_prefix
+        else:
+            key_prefix = hex(first_byte) + key_prefix
+        # print("Key prefix is: " + key_prefix + " from address " + scanEntry.addr)
+        for key in keys:
+            for candidate in list(key['advertised_prefixes']):
+                if candidate.startswith(key_prefix):
+                    self.callback(key['name'], rssi)
+                    return
+                    # print(f"Got notificaton from {key['name']} with signal strength {scanEntry.rssi} dBm")
+        print(f"Unknown Apple device with prefix {key_prefix} detected ")
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
         """
@@ -198,32 +238,8 @@ class ScanPrint(btle.DefaultDelegate):
             if code_type == 0xff and val[0:6] == "4c0012":
                 # print("Apple device discovered")
                 data = unhexlify(val)
-                # Apple advertisement
-                first_byte = int(scanEntry.addr[0:2], 16) & 0b00111111
-                key_prefix = scanEntry.addr.replace(":", "")[2:]
-                # status = val[6:7]
-                # This contains the battery info and whether the
-                # AirTag was seen by its owner recently
-                if data[3] == 25:
-                    # Full key. Rest of the key is in val[8:..]
-                    # but we don't really need it - just the prefix
-                    special_bits = data[27]
-                elif data[3] == 2: # Partial key
-                    special_bits = data[5]
-                else:
-                    print(f"Bad special bits {data[5]}")
-                first_byte |= ((special_bits << 6) & 0b11000000)
-                first_byte &= 0xff
-                if first_byte < 0x10:
-                    key_prefix = "0x0" + hex(first_byte)[2] + key_prefix
-                else:
-                    key_prefix = hex(first_byte) + key_prefix
-                # print("Key prefix is: " + key_prefix + " from address " + scanEntry.addr)
-                for key in keys:
-                    for candidate in list(key['advertised_prefixes']):
-                        if candidate.startswith(key_prefix):
-                            self.callback(key['name'], scanEntry.rssi)
-                            # print(f"Got notificaton from {key['name']} with signal strength {scanEntry.rssi} dBm")
+                self.handle_apple_device(data, scanEntry.addr, scanEntry.rssi)
+
 
 def update_keys_as_required():
     """
@@ -251,6 +267,7 @@ def setup(filename):
     stash_keys(filename)
     return [key['name'] for key in keys]
 
+
 def start(callback):
     """
     Start running the collector
@@ -263,6 +280,7 @@ def start(callback):
     scanner = btle.Scanner(0).withDelegate(ScanPrint(callback))
     print("Scanning")
     scanner.scan(0)
+
 
 if __name__ == "__main__":
     setup('keys')
