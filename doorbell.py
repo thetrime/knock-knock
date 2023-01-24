@@ -61,6 +61,8 @@ def handle_tag(name, rssi):
                 states[index] = False
                 set_leds()
                 ring_doorbell()
+        else:
+            print(f"Not taking any action for {name}")
 
 
 def main():
