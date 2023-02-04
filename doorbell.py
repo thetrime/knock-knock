@@ -13,7 +13,7 @@ switches = [9, 11]
 # leds: the GPIO pins connected to the LEDs indicating the tags are armed (the length of this should be the same as len(switches))
 leds = [24, 25]
 # Tolerance: Once the Airtag is less than MINIMUM_DISTANCE dBm away, the bell will ring
-MINIMUM_DISTANCE = -60
+MINIMUM_DISTANCE = -72
 # End configuration
 
 
