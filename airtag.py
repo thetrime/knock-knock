@@ -229,8 +229,8 @@ class ScanPrint(btle.DefaultDelegate):
                 if candidate.startswith(key_prefix):
                     self.callback(key['name'], rssi)
                     return
-                    # print(f"Got notificaton from {key['name']} with signal strength {scanEntry.rssi} dBm")
-        print(f"Unknown Apple device with prefix {key_prefix} detected ")
+                    # print(f"Got notificaton from {key['name']} with signal strength {rssi} dBm")
+        print(f"Unknown Apple device with prefix {key_prefix} detected at strength {rssi} dBm")
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
         """
