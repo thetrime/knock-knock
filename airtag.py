@@ -121,14 +121,16 @@ def rehydrate_keys():
     for key in keys:
         i = 0
         original_time = key['time']
+        print(f"Rehydrating key {key['name']} which was last stashed with timestamp {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')}\n")
         while key['time'] < time() - 4 * 60 * 60:
             p = 100 * ((key['time'] - original_time) / (time() - 4 * 60 * 60 - original_time))
             i += 1
             if i == 96:
+                # Provide a periodic update in case this is going to take a long time
                 i = 0
                 print(f"{p:.2f}% {key['name']}\r", end='')
                 sys.stdout.flush()
-                #print(f"Key {key['name']} is at {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')}")
+                print(f"Key {key['name']} is at {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')}")
             update_key(key, False)
         print(f"{100}% {key['name']}")
 
@@ -233,6 +235,7 @@ def update_keys_as_required():
     while True:
         for key in keys:
             while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
+                print(f"Key {key['name']} needs updating because it has time {datetime.fromtimestamp(key['time']).isoformat(timespec='seconds')} but the end window is {datetime.fromtimestamp(time() + (WINDOW_SIZE/2) * 15 * 60).isoformat(timespec='seconds')}\n")
                 update_key(key, True)
         print("Key schedule is current")
         sleep(60)
