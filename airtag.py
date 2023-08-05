@@ -227,6 +227,7 @@ class ScanPrint(btle.DefaultDelegate):
         for key in keys:
             for candidate in list(key['advertised_prefixes']):
                 if candidate.startswith(key_prefix):
+                    print(f"Tag {key[name]} detected with prefix {key_prefix}")
                     self.callback(key['name'], rssi)
                     return
                     # print(f"Got notificaton from {key['name']} with signal strength {rssi} dBm")
