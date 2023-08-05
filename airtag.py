@@ -55,8 +55,9 @@ def update_key(key, update_advertised):
         # Compute P_1
         p_1 = u_1 * key['p_0'] + v_1 * G
         if len(key['advertised_prefixes']) > WINDOW_SIZE:
-            key['advertised_prefixes'].popleft()
-            key['advertised_times'].popleft()
+            old_prefix = key['advertised_prefixes'].popleft()
+            old_time = key['advertised_times'].popleft()
+            print(f"Dropping old key for {key['name']} that was valid at {datetime.fromtimestamp(old_time).isoformat(timespec='seconds')}: ${old_prefix}")
         # We only really care about the first 6 bytes of the key.
         # In the near-to-owner case, this is all that is advertised..
         # The full key is only needed if we want to upload a finding-report to Apple
