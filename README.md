@@ -101,3 +101,10 @@ Payload:
 [12]    54: Status (0b1010100: Battery full. Owner saw it recently)
 [13]    02: First 2 bits of key are 0b11, yielding 0b11011111 which is just df
 ```
+
+
+# Notes on the window size
+In experiments, it seemed that tags could be as much as 6 keys behind. This might be related to daylight saving changes - I was unable to find a conclusive explanation
+
+# About the timing
+It seems that tags switch their keys at :00, :15, :30 and :45 rather than 15 minutes since pairing. The code does not correctly implement this, but the window size covers the discrepancy

@@ -18,7 +18,7 @@ keys = []
 ENDIANNESS = "big"
 G = NIST224p.generator
 n = NIST224p.order
-WINDOW_SIZE = 10
+WINDOW_SIZE = 20
 
 
 def update_key(key, update_advertised):
@@ -138,7 +138,7 @@ def rehydrate_keys():
                 print(f"{p:.2f}% {key['name']}\r", end='')
                 sys.stdout.flush()
                 print(f"Key {key['name']} is at {datetime.utcfromtimestamp(key['time']).isoformat(timespec='seconds')}Z")
-            update_key(key, True)
+            update_key(key, False)
         print(f"{100}% {key['name']}")
 
 
