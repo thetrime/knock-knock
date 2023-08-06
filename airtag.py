@@ -34,7 +34,7 @@ def update_key(key, update_advertised):
     )
     sk_1 = xkdf.derive(key['shared_key'])
     print(
-        f"Updating key {key['name']} to be current from {datetime.utcfromtimestamp(t_i).isoformat(timespec='seconds')}")
+        f"Updating key {key['name']} to be current from {datetime.utcfromtimestamp(t_i).isoformat(timespec='seconds')}Z")
     if update_advertised:
         # Derive AT_1 from SK_1
         xkdf = X963KDF(
@@ -57,15 +57,15 @@ def update_key(key, update_advertised):
         if len(key['advertised_prefixes']) > WINDOW_SIZE:
             old_prefix = key['advertised_prefixes'].popleft()
             old_time = key['advertised_times'].popleft()
-            print(f"Dropping old key for {key['name']} that was valid at {datetime.utcfromtimestamp(old_time).isoformat(timespec='seconds')}: ${old_prefix}")
+            print(f"At {datetime.utcfromtimestamp(time()).isoformat(timespec='seconds')}Z we are dropping old key for {key['name']} that was valid at {datetime.utcfromtimestamp(old_time).isoformat(timespec='seconds')}Z: ${old_prefix}")
         # We only really care about the first 6 bytes of the key.
         # In the near-to-owner case, this is all that is advertised..
         # The full key is only needed if we want to upload a finding-report to Apple
         new_prefix = hex(p_1.x())[0:14]
-        print(f"Expecting prefix for {key['name']} to be {new_prefix}")
+        print(f"Expecting prefix for {key['name']} to be {new_prefix} at {datetime.utcfromtimestamp(t_i).isoformat(timespec='seconds')}Z (it is currently {datetime.utcfromtimestamp(time()).isoformat(timespec='seconds')}Z)")
         key['advertised_prefixes'].append(new_prefix)
         key['advertised_times'].append(t_i)
-        print(f"We now have prefixes for {key['name']} from {datetime.utcfromtimestamp(key['advertised_times'][0]).isoformat(timespec='seconds')} to {datetime.utcfromtimestamp(key['advertised_times'][-1]).isoformat(timespec='seconds')}")
+        print(f"We now have prefixes for {key['name']} from {datetime.utcfromtimestamp(key['advertised_times'][0]).isoformat(timespec='seconds')}Z to {datetime.utcfromtimestamp(key['advertised_times'][-1]).isoformat(timespec='seconds')}Z")
 
     # If the trace key is now at least 4 hours old, we can stash it
     if t_i > key['trace_time'] + 4 * 60 * 60:
@@ -127,7 +127,7 @@ def rehydrate_keys():
     for key in keys:
         i = 0
         original_time = key['time']
-        print(f"Rehydrating key {key['name']} which was last stashed with timestamp {datetime.utcfromtimestamp(key['time']).isoformat(timespec='seconds')}\n")
+        print(f"Rehydrating key {key['name']} which was last stashed with timestamp {datetime.utcfromtimestamp(key['time']).isoformat(timespec='seconds')}Z\n")
         while key['time'] < time() - 4 * 60 * 60:
             p = 100 * ((key['time'] - original_time) /
                        (time() - 4 * 60 * 60 - original_time))
@@ -137,8 +137,8 @@ def rehydrate_keys():
                 i = 0
                 print(f"{p:.2f}% {key['name']}\r", end='')
                 sys.stdout.flush()
-                print(f"Key {key['name']} is at {datetime.utcfromtimestamp(key['time']).isoformat(timespec='seconds')}")
-            update_key(key, False)
+                print(f"Key {key['name']} is at {datetime.utcfromtimestamp(key['time']).isoformat(timespec='seconds')}Z")
+            update_key(key, True)
         print(f"{100}% {key['name']}")
 
 
@@ -232,7 +232,7 @@ class ScanPrint(btle.DefaultDelegate):
                     self.callback(key['name'], rssi)
                     return
                     # print(f"Got notificaton from {key['name']} with signal strength {rssi} dBm")
-        print(f"Unknown Apple device with prefix {key_prefix} detected at strength {rssi} dBm")
+        print(f"Unknown Apple device with prefix {key_prefix} detected at strength {rssi} dBm at {datetime.utcfromtimestamp(time()).isoformat(timespec='seconds')}Z")
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
         """
@@ -253,7 +253,7 @@ def update_keys_as_required():
     while True:
         for key in keys:
             while key['time'] < time() + (WINDOW_SIZE/2) * 15 * 60:
-                print(f"Key {key['name']} needs updating because it has time {datetime.utcfromtimestamp(key['time']).isoformat(timespec='seconds')} but the end window is {datetime.utcfromtimestamp(time() + (WINDOW_SIZE/2) * 15 * 60).isoformat(timespec='seconds')}\n")
+                print(f"Key {key['name']} needs updating because it has time {datetime.utcfromtimestamp(key['time']).isoformat(timespec='seconds')}Z but the end window is {datetime.utcfromtimestamp(time() + (WINDOW_SIZE/2) * 15 * 60).isoformat(timespec='seconds')}Z\n")
                 update_key(key, True)
         print("Key schedule is current")
         sleep(60)
