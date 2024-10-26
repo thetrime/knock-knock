@@ -18,7 +18,7 @@ public struct decryptor {
             return
         }
         guard let existingItem = item as? [String : Any],
-              let passwordData = existingItem[kSecAttrGeneric as String] as? Data
+              let passwordData = existingItem[kSecValueData as String] as? Data
         else {
             print("Could not unpack password")
             return
